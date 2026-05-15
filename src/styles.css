@@ -607,3 +607,164 @@ h2 {
     display: grid;
   }
 }
+.account-profile {
+  display: grid;
+  gap: 10px;
+  min-width: min(100%, 260px);
+}
+
+.account-profile-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.account-avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: linear-gradient(135deg, #6d5dfc, #22c55e);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.account-profile-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.account-profile-copy strong,
+.account-profile-copy small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-profile-copy strong {
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.account-profile-copy small,
+.account-profile-upload small,
+.account-profile-note {
+  color: var(--muted, #697386);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.account-profile-upload,
+.account-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar-upload {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 11px;
+  border: 1px solid rgba(109, 93, 252, 0.36);
+  border-radius: 8px;
+  color: inherit;
+  background: rgba(109, 93, 252, 0.1);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.avatar-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.avatar-upload:hover,
+.avatar-upload:focus-within {
+  border-color: rgba(109, 93, 252, 0.68);
+  background: rgba(109, 93, 252, 0.16);
+}
+
+.avatar-upload.disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.account-profile-actions button,
+.account-profile-actions a {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 11px;
+  border: 1px solid rgba(127, 139, 166, 0.34);
+  border-radius: 8px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.account-profile-actions button:hover,
+.account-profile-actions a:hover,
+.account-profile-actions button:focus-visible,
+.account-profile-actions a:focus-visible {
+  border-color: rgba(109, 93, 252, 0.68);
+  outline: none;
+}
+
+.account-profile-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.account-profile-actions .danger {
+  color: #b4492d;
+  border-color: rgba(244, 117, 88, 0.44);
+}
+
+.account-profile-success,
+.account-profile-error {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+.account-profile-success {
+  color: #167a46;
+}
+
+.account-profile-error {
+  color: #b42318;
+}
+
+.account-profile.compact {
+  min-width: 0;
+}
+
+
