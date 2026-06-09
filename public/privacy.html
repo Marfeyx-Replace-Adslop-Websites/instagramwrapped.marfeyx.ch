@@ -134,35 +134,19 @@
         </section>
 
         <section>
-          <h2>Login and Account Data</h2>
-          <p>
-            hash, session metadata, timestamps, and optional display name metadata.
-          </p>
-        </section>
-
-        <section>
           <h2>Storage and Retention</h2>
           <p>
             Imported Instagram data is kept in browser memory only. It is cleared when the page is refreshed, closed,
-            a new file replaces it, or you sign out. This version does not store Instagram exports, messages, media, or
+            a new file replaces it. This version does not store Instagram exports, messages, media, or wrapped results in server storage or a database.
           </p>
         </section>
 
         <section>
           <h2>Purpose of Processing</h2>
           <ul>
-            <li>Authenticate users before opening the local import tool.</li>
             <li>Parse Instagram exports locally in the browser.</li>
             <li>Calculate private chat, response time, media, reel, and activity statistics.</li>
-            <li>Maintain account sessions and support account deletion requests.</li>
-          </ul>
-        </section>
-
-        <section>
-          <p>
-            admin tokens, private API keys, and direct database connection strings must never be committed to GitHub or
-            bundled into this app.
-          </p>
+            </ul>
         </section>
 
         <section>
