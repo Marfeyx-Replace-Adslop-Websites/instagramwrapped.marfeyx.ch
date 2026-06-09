@@ -1,30 +1,10 @@
-import { ChangeEvent, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { AccountProfile } from "./accountProfile";
+import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { calculateWrappedStats, pickLikelySelf } from "./stats";
 import type { ParsedBackup, ParticipantStats, WorkerResponse, WrappedStats } from "./types";
 
-type AuthMode = "login" | "register";
-
-const maxAuthAttempts = 5;
-const authLockoutMs = 60 * 1000;
-const maxAuthSubmissions = 5;
-const authRateLimitWindowMs = 60 * 1000;
 const mobileBreakpoint = 860;
 
 export default function App() {
-  const [authUser, setAuthUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authDisplayName, setAuthDisplayName] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [authFailures, setAuthFailures] = useState(0);
-  const [authLockedUntil, setAuthLockedUntil] = useState<number | null>(null);
-  const [authRateLimitedUntil, setAuthRateLimitedUntil] = useState<number | null>(null);
-  const [now, setNow] = useState(() => Date.now());
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < mobileBreakpoint);
   const [backup, setBackup] = useState<ParsedBackup | null>(null);
   const [selfAliases, setSelfAliases] = useState<Set<string>>(() => new Set());
@@ -33,15 +13,6 @@ export default function App() {
   const [isImporting, setIsImporting] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const authSubmissionTimes = useRef<number[]>([]);
-
-  const isAuthLocked = Boolean(authLockedUntil && authLockedUntil > now);
-  const isAuthRateLimited = Boolean(authRateLimitedUntil && authRateLimitedUntil > now);
-  const isAuthBlocked = isAuthLocked || isAuthRateLimited;
-  const authBlockSeconds = Math.max(
-    authLockedUntil ? Math.ceil((authLockedUntil - now) / 1000) : 0,
-    authRateLimitedUntil ? Math.ceil((authRateLimitedUntil - now) / 1000) : 0,
-  );
   const participants = backup?.participants ?? [];
   const stats = useMemo(() => calculateWrappedStats(backup, selfAliases, Date.now()), [backup, selfAliases]);
   const hasAliases = selfAliases.size > 0;
@@ -52,50 +23,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < mobileBreakpoint);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-
-      if (!isMounted) return;
-      setAuthUser(data.user);
-      setIsAuthReady(true);
-      setIsAuthModalOpen(!data.user);
-    });
-
-    const {
-      data: { subscription },
-      setAuthUser(session?.user ?? null);
-      setIsAuthReady(true);
-      setIsAuthModalOpen(!session?.user);
-      if (!session?.user) clearImportedData();
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-      workerRef.current?.terminate();
-    };
-  }, []);
-
-  useEffect(() => {
+    useEffect(() => {
     setSelfAliases((current) => new Set([...current].filter((name) => participants.includes(name))));
   }, [participants]);
 
   function openFilePicker() {
-    if (!authUser) {
-      setAuthError("");
-      setIsAuthModalOpen(true);
-      return;
-    }
     fileInputRef.current?.click();
   }
 
@@ -104,12 +41,7 @@ export default function App() {
     event.target.value = "";
     if (!file) return;
 
-    if (!authUser) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    if (!file.name.toLowerCase().endsWith(".zip")) {
+        if (!file.name.toLowerCase().endsWith(".zip")) {
       setImportErrors(["Choose an Instagram export ZIP file."]);
       return;
     }
@@ -160,80 +92,7 @@ export default function App() {
     });
   }
 
-  async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
 
-    if (isAuthBlocked) {
-      setAuthError(`Too many attempts. Try again in ${authBlockSeconds} seconds.`);
-      return;
-    }
-
-    const email = authEmail.trim().toLowerCase();
-    const displayName = authDisplayName.trim();
-    const validationError = validateCredentials(email, authPassword, authMode === "register" ? displayName : undefined);
-    if (validationError) {
-      setAuthError(validationError);
-      return;
-    }
-
-    const rateLimitError = registerAuthSubmission();
-    if (rateLimitError) {
-      setAuthError(rateLimitError);
-      return;
-    }
-
-    setIsAuthenticating(true);
-    setAuthError("");
-
-    try {
-      const result =
-        authMode === "login"
-              email,
-              password: authPassword,
-              options: { data: { display_name: displayName, username: displayName } },
-            });
-
-      if (result.error) {
-        if (shouldCountAuthFailure(result.error, authMode)) registerAuthFailure();
-        setAuthError(getAuthErrorMessage(result.error, authMode));
-        return;
-      }
-
-      setAuthFailures(0);
-      setAuthLockedUntil(null);
-      setAuthPassword("");
-      setIsAuthModalOpen(false);
-
-      if (authMode === "register" && !result.data.session) {
-        setAuthError("Check your email to confirm your account before signing in.");
-        setAuthMode("login");
-        setIsAuthModalOpen(true);
-      }
-    } catch {
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }
-
-  function registerAuthSubmission() {
-    const cutoff = Date.now() - authRateLimitWindowMs;
-    authSubmissionTimes.current = authSubmissionTimes.current.filter((time) => time > cutoff);
-    if (authSubmissionTimes.current.length >= maxAuthSubmissions) {
-      setAuthRateLimitedUntil(Date.now() + authRateLimitWindowMs);
-      return "Too many login attempts. Try again in 60 seconds.";
-    }
-    authSubmissionTimes.current.push(Date.now());
-    return "";
-  }
-
-  function registerAuthFailure() {
-    const nextFailures = authFailures + 1;
-    setAuthFailures(nextFailures);
-    if (nextFailures >= maxAuthAttempts) {
-      setAuthLockedUntil(Date.now() + authLockoutMs);
-      setAuthFailures(0);
-    }
-  }
 
   function toggleAlias(name: string) {
     setSelfAliases((current) => {
@@ -253,8 +112,7 @@ export default function App() {
     setImportErrors([]);
   }
 
-    clearImportedData();
-  }
+
 
   if (isMobile) return <DesktopOnly />;
 
@@ -267,16 +125,9 @@ export default function App() {
           <p className="lede">Upload an Instagram export ZIP. Stats are calculated in this browser for {windowLabel}.</p>
         </div>
 
-        <AccountProfile
-          compact
-          className="auth-status"
-          user={authUser}
-          isAuthReady={isAuthReady}
-          onSignOut={signOut}
-          onLogin={() => setIsAuthModalOpen(true)}
-        />
 
-        <button className="file-drop" disabled={!authUser || isImporting} onClick={openFilePicker}>
+
+        <button className="file-drop" disabled={isImporting} onClick={openFilePicker}>
           <span className="file-icon">+</span>
           <strong>{isImporting ? "Importing locally..." : "Choose Instagram export ZIP"}</strong>
           <small>Nothing is uploaded or saved. Only the last 365 days are kept in memory.</small>
@@ -326,7 +177,7 @@ export default function App() {
           <p>
             {stats.messages
               ? `${stats.messages.toLocaleString()} messages across ${stats.chats.toLocaleString()} chats.`
-              : "The dashboard unlocks after your first successful import."}
+              : "The dashboard fills after your first successful import."}
           </p>
         </div>
 
@@ -429,96 +280,8 @@ export default function App() {
         </section>
       </aside>
 
-      {isAuthModalOpen && (
-        <AuthModal
-          authMode={authMode}
-          blockSeconds={authBlockSeconds}
-          displayName={authDisplayName}
-          email={authEmail}
-          error={authError}
-          isAuthenticating={isAuthenticating}
-          isBlocked={isAuthBlocked}
-          password={authPassword}
-          setAuthMode={setAuthMode}
-          setDisplayName={setAuthDisplayName}
-          setEmail={setAuthEmail}
-          setPassword={setAuthPassword}
-          onClose={() => authUser && setIsAuthModalOpen(false)}
-          onSubmit={handleAuthSubmit}
-        />
-      )}
-    </main>
-  );
-}
 
-function AuthModal(props: {
-  authMode: AuthMode;
-  blockSeconds: number;
-  displayName: string;
-  email: string;
-  error: string;
-  isAuthenticating: boolean;
-  isBlocked: boolean;
-  password: string;
-  setAuthMode: (mode: AuthMode) => void;
-  setDisplayName: (value: string) => void;
-  setEmail: (value: string) => void;
-  setPassword: (value: string) => void;
-  onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <form className="auth-modal" onSubmit={props.onSubmit}>
-        <div className="modal-header">
-          <div>
-            <p className="eyebrow">Private access</p>
-            <h2>{props.authMode === "login" ? "Login required" : "Create account"}</h2>
-          </div>
-          <button type="button" onClick={props.onClose} aria-label="Close login">
-            x
-          </button>
-        </div>
-        {props.authMode === "register" && (
-          <label className="field">
-            Display name
-            <input value={props.displayName} autoComplete="name" onChange={(event) => props.setDisplayName(event.target.value)} />
-          </label>
-        )}
-        <label className="field">
-          Email
-          <input value={props.email} autoComplete="email" inputMode="email" onChange={(event) => props.setEmail(event.target.value)} />
-        </label>
-        <label className="field">
-          Password
-          <input
-            value={props.password}
-            autoComplete={props.authMode === "login" ? "current-password" : "new-password"}
-            type="password"
-            onChange={(event) => props.setPassword(event.target.value)}
-          />
-        </label>
-        {props.error && <div className="error-message">{props.error}</div>}
-        <button className="primary-button" disabled={props.isAuthenticating || props.isBlocked} type="submit">
-          {props.isBlocked
-            ? `Try again in ${props.blockSeconds}s`
-            : props.isAuthenticating
-              ? "Working..."
-              : props.authMode === "login"
-                ? "Login"
-                : "Register"}
-        </button>
-        <button
-          className="text-button"
-          type="button"
-          onClick={() => {
-            props.setAuthMode(props.authMode === "login" ? "register" : "login");
-          }}
-        >
-          {props.authMode === "login" ? "Need an account?" : "Already have an account?"}
-        </button>
-      </form>
-    </div>
+    </main>
   );
 }
 
@@ -655,30 +418,11 @@ function DesktopOnly() {
   );
 }
 
-function validateCredentials(email: string, password: string, displayName?: string) {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
-  if (password.length < 8) return "Password must be at least 8 characters.";
-  if (displayName !== undefined && displayName.length < 2) return "Display name must be at least 2 characters.";
-  return "";
-}
 
-function shouldCountAuthFailure(error: AuthError, mode: AuthMode) {
-  const code = "code" in error && typeof error.code === "string" ? error.code : "";
-  const message = error.message.toLowerCase();
-  return mode === "login" && (code === "invalid_credentials" || message.includes("invalid login credentials"));
-}
 
-function getAuthErrorMessage(error: AuthError, mode: AuthMode) {
-  const code = "code" in error && typeof error.code === "string" ? error.code : "";
-  const message = error.message.toLowerCase();
-  if (code === "invalid_credentials" || message.includes("invalid login credentials")) return "Invalid email or password.";
-  if (code === "email_not_confirmed" || message.includes("email not confirmed")) return "Confirm your email address before signing in.";
-  if (code === "user_already_exists" || message.includes("already registered") || message.includes("already exists")) {
-    return "An account already exists for this email.";
-  }
-  if (error.status === 429 || message.includes("rate limit")) return "Too many requests. Wait a moment and try again.";
-  return mode === "login" ? "Login failed. Check your credentials and try again." : "Registration failed. Check your details and try again.";
-}
+
+
+
 
 function formatDate(timestampMs: number) {
   return new Date(timestampMs).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });

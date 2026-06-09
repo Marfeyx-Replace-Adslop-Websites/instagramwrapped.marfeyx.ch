@@ -20,4 +20,6 @@ npm run dev
 
 - Instagram ZIP files are parsed in the browser with a web worker.
 - Chat contents and computed stats are kept in memory only.
+- No login or external auth service is used.
 - ZIP exports, logs, `dist`, and `node_modules` are ignored by Git.
+- Never commit private API keys, database passwords, direct connection strings, or Instagram backup files.
