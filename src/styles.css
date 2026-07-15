@@ -220,6 +220,17 @@ h2 {
   padding: 16px;
 }
 
+.summary-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.summary-actions .text-button {
+  width: 100%;
+  justify-self: stretch;
+}
+
 .alias-list {
   display: flex;
   flex-wrap: wrap;
