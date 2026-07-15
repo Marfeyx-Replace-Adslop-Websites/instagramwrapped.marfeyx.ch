@@ -174,10 +174,11 @@ function getChatSummaries(backup: ParsedBackup | null): ChatSummary[] {
 }
 
 function addResponseTimes(messages: ChatMessage[], byParticipant: Map<string, ParticipantStats>) {
-  let previous: ChatMessage | null = null;
+  const previousByThread = new Map<string, ChatMessage>();
 
   for (const message of messages) {
     if (message.isSystem || !message.sender || message.timestampMs === null) continue;
+    const previous = previousByThread.get(message.threadId);
     if (previous?.sender && previous.timestampMs !== null && previous.sender !== message.sender) {
       const responseMs = message.timestampMs - previous.timestampMs;
       const bucket = byParticipant.get(message.sender);
@@ -187,7 +188,7 @@ function addResponseTimes(messages: ChatMessage[], byParticipant: Map<string, Pa
         bucket.averageResponseMs = Math.round(bucket.totalResponseMs / bucket.responseCount);
       }
     }
-    previous = message;
+    previousByThread.set(message.threadId, message);
   }
 }
 
