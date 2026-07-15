@@ -1,5 +1,6 @@
 import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { calculateWrappedStats, pickLikelySelf } from "./stats";
+import { createWrappedSummary, getSummaryFilename } from "./summary";
 import type { ParsedBackup, ParticipantStats, WorkerResponse, WrappedStats } from "./types";
 
 const mobileBreakpoint = 860;
@@ -112,6 +113,20 @@ export default function App() {
     setImportErrors([]);
   }
 
+  function downloadSummary() {
+    if (!backup) return;
+    const summary = createWrappedSummary(backup, stats, selfAliases);
+    const blob = new Blob([`${JSON.stringify(summary, null, 2)}\n`], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = getSummaryFilename(backup.sourceName, stats.generatedAtMs);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
 
 
   if (isMobile) return <DesktopOnly />;
@@ -140,6 +155,15 @@ export default function App() {
             {error}
           </div>
         ))}
+
+        <div className="summary-actions">
+          <button className="primary-button" disabled={!backup} onClick={downloadSummary}>
+            Download summary
+          </button>
+          <button className="text-button" disabled={!backup} onClick={clearImportedData}>
+            Clear imported data
+          </button>
+        </div>
 
         <section className="panel-block">
           <h2>Identity</h2>
