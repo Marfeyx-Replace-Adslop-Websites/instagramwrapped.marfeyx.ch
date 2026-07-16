@@ -5,6 +5,7 @@ import { ImportCancelledError, ImportWorkerSession } from "./importWorker";
 import type { ParsedBackup, ParticipantStats, WrappedStats } from "./types";
 
 const mobileBreakpoint = 860;
+const emptyParticipants: string[] = [];
 
 export default function App() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < mobileBreakpoint);
@@ -16,7 +17,7 @@ export default function App() {
   const workerSessionRef = useRef<ImportWorkerSession | null>(null);
   const importGenerationRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const participants = backup?.participants ?? [];
+  const participants = backup?.participants ?? emptyParticipants;
   const stats = useMemo(() => calculateWrappedStats(backup, selfAliases, Date.now()), [backup, selfAliases]);
   const hasAliases = selfAliases.size > 0;
   const windowLabel = `${formatDate(stats.windowStartMs)} - ${formatDate(stats.windowEndMs)}`;
@@ -37,8 +38,8 @@ export default function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-    useEffect(() => {
-    setSelfAliases((current) => new Set([...current].filter((name) => participants.includes(name))));
+  useEffect(() => {
+    setSelfAliases((current) => filterAliasesForParticipants(current, participants));
   }, [participants]);
 
   function openFilePicker() {
@@ -469,4 +470,20 @@ function formatDuration(ms: number | null) {
 function trimText(text: string, limit: number) {
   const cleaned = text.replace(/\s+/g, " ").trim();
   return cleaned.length > limit ? `${cleaned.slice(0, limit - 1)}...` : cleaned;
+}
+
+export function filterAliasesForParticipants(current: Set<string>, participants: readonly string[]) {
+  const allowed = new Set(participants);
+  let changed = false;
+  const next = new Set<string>();
+
+  for (const name of current) {
+    if (allowed.has(name)) {
+      next.add(name);
+    } else {
+      changed = true;
+    }
+  }
+
+  return changed ? next : current;
 }
