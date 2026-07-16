@@ -1,7 +1,8 @@
 import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { calculateWrappedStats, pickLikelySelf } from "./stats";
 import { createWrappedSummary, getSummaryFilename } from "./summary";
-import type { ParsedBackup, ParticipantStats, WorkerResponse, WrappedStats } from "./types";
+import { ImportCancelledError, ImportWorkerSession } from "./importWorker";
+import type { ParsedBackup, ParticipantStats, WrappedStats } from "./types";
 
 const mobileBreakpoint = 860;
 
@@ -12,7 +13,8 @@ export default function App() {
   const [importStatus, setImportStatus] = useState("");
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [isImporting, setIsImporting] = useState(false);
-  const workerRef = useRef<Worker | null>(null);
+  const workerSessionRef = useRef<ImportWorkerSession | null>(null);
+  const importGenerationRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const participants = backup?.participants ?? [];
   const stats = useMemo(() => calculateWrappedStats(backup, selfAliases, Date.now()), [backup, selfAliases]);
@@ -21,6 +23,12 @@ export default function App() {
 
   useEffect(() => {
     document.title = "Instagram Wrapped";
+    return () => {
+      importGenerationRef.current += 1;
+      const session = workerSessionRef.current;
+      workerSessionRef.current = null;
+      session?.cancel();
+    };
   }, []);
 
   useEffect(() => {
@@ -50,9 +58,11 @@ export default function App() {
     setIsImporting(true);
     setImportStatus("Reading Instagram ZIP locally...");
     setImportErrors([]);
+    const generation = ++importGenerationRef.current;
 
     try {
       const parsed = await parseWithWorker(file);
+      if (generation !== importGenerationRef.current) return;
       const likelySelf = pickLikelySelf(parsed);
       setBackup(parsed);
       setSelfAliases(likelySelf ? new Set([likelySelf]) : new Set());
@@ -61,36 +71,19 @@ export default function App() {
       );
       setImportErrors(parsed.errors);
     } catch (caught) {
+      if (caught instanceof ImportCancelledError || generation !== importGenerationRef.current) return;
       setImportErrors([caught instanceof Error ? caught.message : "Could not parse this Instagram export."]);
       setImportStatus("");
     } finally {
-      setIsImporting(false);
+      if (generation === importGenerationRef.current) setIsImporting(false);
     }
   }
 
   function parseWithWorker(file: File) {
-    return new Promise<ParsedBackup>((resolve, reject) => {
-      workerRef.current?.terminate();
-      const worker = new Worker(new URL("./statsWorker.ts", import.meta.url), { type: "module" });
-      workerRef.current = worker;
-      const id = crypto.randomUUID();
-
-      worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-        if (event.data.id !== id) return;
-        worker.terminate();
-        workerRef.current = null;
-        if (event.data.ok) resolve(event.data.backup);
-        else reject(new Error(event.data.error));
-      };
-
-      worker.onerror = () => {
-        worker.terminate();
-        workerRef.current = null;
-        reject(new Error("The local parser failed. Try a smaller export or a fresh Instagram download."));
-      };
-
-      worker.postMessage({ id, file });
-    });
+    workerSessionRef.current ??= new ImportWorkerSession(
+      () => new Worker(new URL("./statsWorker.ts", import.meta.url), { type: "module" }),
+    );
+    return workerSessionRef.current.parse(file);
   }
 
 
@@ -105,8 +98,11 @@ export default function App() {
   }
 
   function clearImportedData() {
-    workerRef.current?.terminate();
-    workerRef.current = null;
+    importGenerationRef.current += 1;
+    const session = workerSessionRef.current;
+    workerSessionRef.current = null;
+    session?.cancel();
+    setIsImporting(false);
     setBackup(null);
     setSelfAliases(new Set());
     setImportStatus("");
@@ -160,7 +156,7 @@ export default function App() {
           <button className="primary-button" disabled={!backup} onClick={downloadSummary}>
             Download summary
           </button>
-          <button className="text-button" disabled={!backup} onClick={clearImportedData}>
+          <button className="text-button" disabled={!backup && !isImporting} onClick={clearImportedData}>
             Clear imported data
           </button>
         </div>
