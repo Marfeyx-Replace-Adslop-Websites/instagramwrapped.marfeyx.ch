@@ -1,0 +1,9 @@
+html { background: #0b0d12; color-scheme: dark; }
+body { margin: 0; }
+.mfx-boot { box-sizing: border-box; min-height: 100svh; display: grid; align-content: center; justify-items: center; gap: 18px; padding: 32px; color: #eef2f8; background: #0b0d12; font: 16px/1.6 system-ui, sans-serif; text-align: center; }
+.mfx-boot img { width: 64px; height: 64px; }
+.mfx-boot h1 { margin: 0; font-size: clamp(24px, 5vw, 36px); line-height: 1.2; letter-spacing: -.035em; }
+.mfx-boot p { max-width: 38rem; margin: 0; color: #a3adbd; }
+.mfx-boot a, .mfx-boot button { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 18px; border: 1px solid #514366; border-radius: 10px; color: #d3c6ff; background: #262034; font: inherit; text-decoration: none; cursor: pointer; }
+.mfx-boot :focus-visible { outline: 2px solid #cbbdff; outline-offset: 4px; }
+.mfx-noscript { padding: 16px; background: #0b0d12; color: #eef2f8; font: 16px/1.6 system-ui, sans-serif; text-align: center; }

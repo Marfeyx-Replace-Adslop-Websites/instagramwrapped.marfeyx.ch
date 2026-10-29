@@ -7,7 +7,10 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "test": "vitest run",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "check:pages": "node scripts/verify-pages.mjs",
+    "test:pages": "node scripts/smoke-pages.mjs",
+    "postbuild": "node scripts/verify-pages.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
@@ -20,6 +23,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@playwright/test": "1.64.1"
   }
 }

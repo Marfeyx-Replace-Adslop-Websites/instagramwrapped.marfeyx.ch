@@ -1,3 +1,4 @@
+import { MarfeyxBrand } from "./brand/MarfeyxBrand";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { calculateWrappedStats, pickLikelySelf } from "./stats";
 import { createWrappedSummary, getSummaryFilename } from "./summary";
@@ -8,7 +9,7 @@ const mobileBreakpoint = 860;
 const emptyParticipants: string[] = [];
 
 export default function App() {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < mobileBreakpoint);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= mobileBreakpoint);
   const [backup, setBackup] = useState<ParsedBackup | null>(null);
   const [selfAliases, setSelfAliases] = useState<Set<string>>(() => new Set());
   const [importStatus, setImportStatus] = useState("");
@@ -23,7 +24,7 @@ export default function App() {
   const windowLabel = `${formatDate(stats.windowStartMs)} - ${formatDate(stats.windowEndMs)}`;
 
   useEffect(() => {
-    document.title = "Instagram Wrapped";
+    document.title = "Instagram Wrapped — Marfeyx";
     return () => {
       importGenerationRef.current += 1;
       const session = workerSessionRef.current;
@@ -33,7 +34,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < mobileBreakpoint);
+    const handleResize = () => setIsMobile(window.innerWidth <= mobileBreakpoint);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -131,6 +132,7 @@ export default function App() {
   return (
     <main className="app-shell">
       <aside className="control-panel">
+        <MarfeyxBrand product="Instagram Wrapped" />
         <div>
           <p className="eyebrow">Instagram Wrapped</p>
           <h1>Your chat year, computed privately.</h1>
@@ -430,7 +432,8 @@ function Highlight({ label, value, detail }: { label: string; value: string; det
 function DesktopOnly() {
   return (
     <main className="mobile-disabled">
-      <div>
+      <div className="mobile-disabled-card">
+        <MarfeyxBrand product="Instagram Wrapped" />
         <p className="eyebrow">Desktop only</p>
         <h1>Instagram Wrapped needs a larger screen.</h1>
         <p>Instagram exports can be large, so usage is disabled on mobile. Open this page on a laptop or desktop.</p>
