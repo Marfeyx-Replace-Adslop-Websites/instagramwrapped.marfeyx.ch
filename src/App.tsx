@@ -1,3 +1,4 @@
+import { MarfeyxImport } from "./brand/MarfeyxImport";
 import { MarfeyxBrand } from "./brand/MarfeyxBrand";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { calculateWrappedStats, pickLikelySelf } from "./stats";
@@ -128,6 +129,7 @@ export default function App() {
 
 
   if (isMobile) return <DesktopOnly />;
+  if (!backup) return <MarfeyxImport product="Instagram Wrapped" title="A year worth looking back on." description="Who you talked to. What you shared. When you were there. Find the patterns in a year of Instagram conversations." instruction="Request your Instagram export in JSON format. Choose the ZIP here, then select the names that represent you to see your personal report." inputRef={fileInputRef} onChange={handleFileChange} onBrowse={openFilePicker} busy={isImporting} status={importStatus} errors={importErrors} />;
 
   return (
     <main className="app-shell">
@@ -135,7 +137,7 @@ export default function App() {
         <MarfeyxBrand product="Instagram Wrapped" />
         <div>
           <p className="eyebrow">Instagram Wrapped</p>
-          <h1>Your chat year, computed privately.</h1>
+          <h1>A year worth looking back on.</h1>
           <p className="lede">Upload an Instagram export ZIP. Stats are calculated in this browser for {windowLabel}.</p>
         </div>
 
